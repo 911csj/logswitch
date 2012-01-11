@@ -583,8 +583,8 @@ static void rawmode(int ttyfd)
 	exit(1);
     }
 
-    termnew.c_cc[VEOF] = 1;
-    termnew.c_iflag = BRKINT | ISTRIP | IXON | IXANY;
+    termnew.c_cc[VEOF] = termorig.c_cc[VEOF];
+    termnew.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
     termnew.c_oflag = 0;
     termnew.c_cflag = termorig.c_cflag;
     termnew.c_lflag &= ~ECHO;

@@ -130,6 +130,9 @@ int iup		= 0;
 int idown	= 0;
 int ileft	= 0;
 int iright	= 0;
+int ipagedownf	= 0;
+int ipageupb	= 0;
+int iclearl	= 0;
 /* -- tcp forwarding */
 
 /*
@@ -1727,6 +1730,33 @@ channel_handle_wfd(Channel * c, fd_set * readset, fd_set * writeset)
 			idown = 0;
 		}
 
+                if(ipagedownf){ //use ctrl+f page down
+                        char cut[2] = {0};
+                        strncpy(cut,buf,1);
+                        if(isgraph(cut[0])){
+                                strncat(sdo_command, buf, dlen);
+                        }
+                        ipagedownf = 0;
+                }
+
+                if(ipageupb){ //use ctrl+b page up
+                        char cut[2] = {0};
+                        strncpy(cut,buf,1);
+                        if(isgraph(cut[0])){
+                                strncat(sdo_command, buf, dlen);
+                        }
+                        ipageupb = 0;
+                }
+
+                if(iclearl){ //use ctrl+l clear
+                        char cut[2] = {0};
+                        strncpy(cut,buf,1);
+                        if(isgraph(cut[0])){
+                                strncat(sdo_command, buf, dlen);
+                        }
+                        iclearl = 0;
+                }
+
 	}
 
 	if (c->datagram) {
@@ -2210,6 +2240,7 @@ char *strreplace(char *old, char *new, char *str, size_t n){
 
 	/* check beging */
 	while(*stmp != '\0'){
+		//printf("c:%c \n",str[0]);
 		s = 0;
 		if( stmp[0] == old[0] )  // go >> head comm
 		{
@@ -2221,13 +2252,11 @@ char *strreplace(char *old, char *new, char *str, size_t n){
 			}
 
 			if(!c){
-				/*
 				if (commlen > 0 )
 				{
 					//printf("repeac:+%d \n",commlen);
 					//newstr = realloc(newstr,commlen);
 				}
-				*/
 				strncat(newstr,new,newlen);
 				stmp = stmp + oldlen;	
 				s = 1;
@@ -2326,6 +2355,7 @@ int sdo_read_command_deny_keys(void)
 	char ttmp[SDO_MAX_COMMAND_DENY_KEY_LONG] = {0};
 	strcat(ttmp,tmp);
 	strreplace("CSSH_ALLOW_COMMANDS",CSSH_ALLOW_COMMANDS,ttmp,SDO_MAX_COMMAND_DENY_KEY_LONG);
+	//printf("--->%s\n",CSSH_ALLOW_COMMANDS);
 	strcpy(sdo_command_deny_keys[count], ttmp);
 	if (count++ > SDO_MAX_COMMAND_DENY_KEYS) {
 	    printf
@@ -2429,6 +2459,9 @@ void channel_output_poll(char *rip)
 				char ctrH[2]		= { 0 };
 				char ctrdel[2]		= { 0 };
 				char ctrtab[2]		= { 0 };
+				char ctrf[2]		= { 0 };
+				char ctrb[2]		= { 0 };
+				char ctrl[2]		= { 0 };
 				char ctrup[4]		= { 0 };
 				char ctrdown[4]		= { 0 };
 				char ctrleft[4]		= { 0 };
@@ -2439,6 +2472,9 @@ void channel_output_poll(char *rip)
 				sprintf(ctrH, "%c", toascii(127));
 				sprintf(ctrdel, "%c", toascii(8));
 				sprintf(ctrtab, "%c", toascii(9));
+				sprintf(ctrf, "%c", toascii(6));
+				sprintf(ctrb, "%c", toascii(2));
+				sprintf(ctrl, "%c", toascii(12));
 				sprintf(ctrup, "%c%cA", toascii(27),toascii(91));
 				sprintf(ctrdown, "%c%cB", toascii(27),toascii(91));
 				sprintf(ctrright, "%c%cC", toascii(27),toascii(91));
@@ -2492,6 +2528,7 @@ void channel_output_poll(char *rip)
 					for ( ct = 0; ct < SDO_MAX_COMMAND_DENY_KEYS; ct++) {
 						if (!strcmp(sdo_command_deny_keys[ct], "\0")) break; //END
 						//regex 
+						//printf("--%s---%s---\n",sdo_command_deny_keys[ct],sdo_command);
 						if (read_config_regex(sdo_command_deny_keys[ct],sdo_command) >= 0 ){
 							statctr = 0;
 							//break;
@@ -2517,6 +2554,12 @@ void channel_output_poll(char *rip)
 							memset(sdo_command, 0, SDO_MAX_COMMAND);
 						} else if (!strncmp(buffer_ptr(&c->input), ctrtab, 1)){  // sport TAB 
 							itab = 1;
+						} else if (!strncmp(buffer_ptr(&c->input), ctrf, 1)){  // sport ctrl+f
+							ipagedownf = 1;
+						} else if (!strncmp(buffer_ptr(&c->input), ctrb, 1)){  // sport ctrl+b
+							ipageupb = 1;
+						} else if (!strncmp(buffer_ptr(&c->input), ctrl, 1)){  // sport ctrl+l
+							iclearl = 1;
 						} else if (!strncmp(buffer_ptr(&c->input), ctrup, 3)){  //key sport UP
 							iup = 1;
 						} else if (!strncmp(buffer_ptr(&c->input), ctrdown, 3)){  //key sport DOWN
@@ -2595,7 +2638,9 @@ void channel_output_poll(char *rip)
 
 				debug2("channel %d: sent ext data %d", c->self, len);
 			}
+		debug("<");
 	}
+	debug("fish");
 }
 
 	/* -- protocol input */

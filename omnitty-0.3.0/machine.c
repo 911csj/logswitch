@@ -26,7 +26,7 @@
 #include <stdlib.h>
 
 #ifndef CSSHDIR
-#define CSSHDIR "/usr"
+#define CSSHDIR "/opt/app/cssh"
 #endif
 
 #define CMD_FORMAT CSSHDIR "/bin/ssh %s"
